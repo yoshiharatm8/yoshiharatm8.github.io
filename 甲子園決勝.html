@@ -1,0 +1,766 @@
+はい、承知いたしました。
+ユーザーから受け取ったデータを基に、指定されたHTMLテンプレートを使用してリアルタイムダッシュボードを作成します。
+
+以下が出力されたHTMLコードです。
+
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リアルタイム分析ダッシュボード - 甲子園決勝</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(to bottom, #1a1a2e, #0f0f1e);
+            color: #e4e4e7;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .keyword-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(59, 130, 246, 0.2);
+            padding: 8px 24px;
+            border-radius: 20px;
+            color: #93c5fd;
+            font-weight: 500;
+            width: fit-content;
+            min-width: 300px;
+            white-space: nowrap;
+        }
+
+        .keyword-badge svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+            align-items: start;
+            min-height: calc(100vh - 150px);
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: #1f2937;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            padding: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .card-content {
+            padding: 16px;
+        }
+
+        .gradient-blue {
+            background: linear-gradient(to right, #2563eb, #7c3aed);
+            color: white;
+        }
+
+        .gradient-green {
+            background: linear-gradient(to right, #10b981, #14b8a6);
+            color: white;
+        }
+
+        .gradient-orange {
+            background: linear-gradient(to right, #f59e0b, #ea580c);
+            color: white;
+        }
+
+        .gradient-indigo {
+            background: linear-gradient(to right, #4f46e5, #06b6d4);
+            color: white;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            color: #60a5fa;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-content {
+            background: #374151;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .highlight-box {
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            background: #374151;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 16px;
+        }
+
+        .sentiment-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .sentiment-item {
+            flex: 1;
+        }
+
+        .sentiment-label {
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #4b5563;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-green { background: #10b981; }
+        .progress-gray { background: #9ca3af; }
+        .progress-red { background: #ef4444; }
+
+        .tabs {
+            margin-top: 16px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 4px;
+            background: #374151;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .tab-button.active.positive {
+            background: #065f46;
+            color: #10b981;
+        }
+
+        .tab-button.active.negative {
+            background: #7f1d1d;
+            color: #ef4444;
+        }
+
+        .tab-content-box {
+            background: #374151;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            border-left: 4px solid transparent;
+        }
+
+        .tab-content-box.positive {
+            border-left-color: #10b981;
+        }
+
+        .tab-content-box.neutral {
+            border-left-color: #9ca3af;
+        }
+
+        .tab-content-box.negative {
+            border-left-color: #ef4444;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .keyword-tag {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .theme-list {
+            list-style: none;
+            space-y: 8px;
+        }
+
+        .theme-item {
+            border-left: 2px solid #f59e0b;
+            padding: 8px 12px;
+            background: #374151;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 8px;
+        }
+
+        .structure-list {
+            counter-reset: item;
+            list-style: none;
+        }
+
+        .structure-item {
+            counter-increment: item;
+            padding: 8px 12px;
+            background: #374151;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 32px;
+        }
+
+        .structure-item::before {
+            content: counter(item);
+            position: absolute;
+            left: 12px;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+
+        .tweets-container {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .tweet-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .tweet-card-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .tweet-header-section {
+            flex-shrink: 0;
+        }
+
+        .tweet-search-section {
+            flex-shrink: 0;
+            padding: 12px 16px;
+            background: #374151;
+            border-bottom: 1px solid #4b5563;
+        }
+
+        .tweet-item {
+            padding: 12px;
+            border-bottom: 1px solid #374151;
+            transition: background 0.2s;
+        }
+
+        .tweet-item:hover {
+            background: #374151;
+        }
+
+        .tweet-content {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .tweet-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        .tweet-badge {
+            background: #4b5563;
+            color: #93c5fd;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* スクロールバーのスタイリング */
+        .tweets-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tweets-container::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 4px;
+        }
+
+        .tweets-container::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        .tweets-container::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>リアルタイム分析ダッシュボード</h1>
+            <div class="keyword-badge">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/>
+                </svg>
+                分析キーワード：甲子園決勝
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- 左カラム：概要と分析 -->
+            <div>
+                <!-- サマリーカード -->
+                <div class="card">
+                    <div class="card-header gradient-blue">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                        </svg>
+                        トレンドワード「甲子園決勝」概要
+                    </div>
+                    <div class="card-content">
+                        <div class="section">
+                            <h3>反応分析</h3>
+                            <div class="sentiment-bar">
+                                <div class="sentiment-item">
+                                    <div class="sentiment-label">
+                                        <span style="color: #10b981;">●</span> ポジティブ
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-green" style="width: 53%;"></div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.8rem; margin-top: 2px;">53%</div>
+                                </div>
+                                <div class="sentiment-item">
+                                    <div class="sentiment-label">
+                                        <span style="color: #9ca3af;">●</span> ニュートラル
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-gray" style="width: 47%;"></div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.8rem; margin-top: 2px;">47%</div>
+                                </div>
+                                <div class="sentiment-item">
+                                    <div class="sentiment-label">
+                                        <span style="color: #ef4444;">●</span> ネガティブ
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-red" style="width: 0%;"></div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.8rem; margin-top: 2px;">0%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="highlight-box">
+                            <h3 style="color: #3b82f6; margin-bottom: 8px;">ハイライト</h3>
+                            <p style="font-size: 0.9rem;">甲子園決勝、沖縄尚学vs日大三高の対決に日本中が注目！沖縄県民は歓喜に沸き、交通機関も増便</p>
+                        </div>
+
+                        <div class="section-content">
+                            <p>本日、X（旧Twitter）でトレンドとなっている「甲子園決勝」は、夏の全国高校野球選手権大会の決勝戦が、沖縄尚学（沖縄代表）と日大三高（西東京代表）の間で行われることが決定したことを受けて、急速に注目を集めています。特に、沖縄尚学の決勝進出は地元沖縄で大きな盛り上がりを見せており、JTA（日本トランスオーシャン航空）やJAL（日本航空）が那覇＝関西線の臨時便を運航するほどです。この決勝戦は明日8月23日（土）に開催され、多くのファンが両校の健闘を祈り、熱戦への期待が高まっています。投稿内容からは、決勝戦の対戦カードに関する情報、沖縄県民の熱狂ぶり、関連する歴史的背景、そしてチケット情報などが活発に共有されています。提供されたデータによると、投稿の53%がポジティブな意見、47%がニュートラルな意見で構成されており、ネガティブな意見は確認されていません。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分析カード -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header gradient-indigo">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                        </svg>
+                        話題となっている投稿の分析
+                    </div>
+                    <div class="card-content">
+                        <div class="section">
+                            <h3>注目投稿の傾向</h3>
+                            <div class="section-content">
+                                特に拡散されている投稿は、決勝戦の対戦カード（沖縄尚学vs日大三高）に関する情報や、沖縄尚学の決勝進出を祝う声、沖縄県民の熱狂ぶりを伝える内容が多いです。具体的には、JTAやJALが沖縄-関西線の臨時便を増便したというニュースや、沖縄県では決勝戦の時間は社会活動が停止する可能性さえあるというジョーク交じりの投稿が注目を集めています。また、過去の甲子園決勝や、同時期に行われる中学生の全国大会決勝も「東京vs沖縄」の対決になるという偶然の一致を指摘する投稿も関心を集めています。懸賞キャンペーンがトレンドワードを利用して行われているケースも散見されます。
+                            </div>
+                        </div>
+
+                        <div class="tabs">
+                            <div class="tab-buttons">
+                                <button class="tab-button active positive" onclick="switchTab(event, 'positive', 'positive')">ポジティブ</button>
+                                <button class="tab-button" onclick="switchTab(event, 'neutral', 'neutral')">ニュートラル</button>
+                                <button class="tab-button negative" onclick="switchTab(event, 'negative', 'negative')">ネガティブ</button>
+                            </div>
+                            <div id="positive" class="tab-content active">
+                                <div class="tab-content-box positive">
+                                    ポジティブな意見としては、沖縄尚学や日大三高の決勝進出に対する祝福や応援の声が多数を占めています。「決勝進出おめでとう！」「感動をありがとう」「チバリヨ〜」といった直接的な応援メッセージや、決勝戦への期待感、チケットが取れたことへの喜びが表現されています。特に沖縄県民の熱狂ぶりを示す「県民沸騰」「うちなーんちゅ2人で沖尚応援しにいくよ」といった投稿が目立ちます。
+                                </div>
+                            </div>
+                            <div id="neutral" class="tab-content">
+                                <div class="tab-content-box neutral">
+                                    ニュートラルな意見は、決勝戦のカード、開催日、試合結果の速報など、事実情報を伝える内容が中心です。JTAやJALの臨時便運航、那覇空港の時間外開放に関する情報、過去の甲子園決勝（松坂大輔選手のノーヒットノーランなど）の振り返り、また中学生の全国大会決勝も東京対沖縄であるという偶然の一致を伝える投稿などが含まれます。また、トレンドワードに関連付けられたプレゼントキャンペーンや、他の芸能・スポーツ情報の紹介（Da-iCE、巨人リチャード選手など）も多く見られます。
+                                </div>
+                            </div>
+                            <div id="negative" class="tab-content">
+                                <div class="tab-content-box negative">
+                                    提供されたツイートからは、甲子園決勝そのものに対する明確なネガティブな意見は確認されませんでした。一部、台風の影響で雨への懸念や、沖縄の盛り上がりによる観光客への注意喚起といった言及はありますが、これらは試合内容や開催自体への批判ではありません。
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section" style="margin-top: 20px;">
+                            <h3>関連キーワード</h3>
+                            <div class="keyword-tags">
+                                <span class="keyword-tag">沖縄尚学</span>
+                                <span class="keyword-tag">日大三高</span>
+                                <span class="keyword-tag">甲子園</span>
+                                <span class="keyword-tag">高校野球</span>
+                                <span class="keyword-tag">沖縄</span>
+                                <span class="keyword-tag">東京</span>
+                                <span class="keyword-tag">JTA</span>
+                                <span class="keyword-tag">JAL</span>
+                                <span class="keyword-tag">巨人</span>
+                                <span class="keyword-tag">リチャード</span>
+                                <span class="keyword-tag">松坂大輔</span>
+                                <span class="keyword-tag">侍ジャパンU-18</span>
+                                <span class="keyword-tag">熱闘甲子園</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中央カラム：情報とスクリプト -->
+            <div>
+                <!-- 情報カード -->
+                <div class="card">
+                    <div class="card-header gradient-green">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        視聴者への情報提供
+                    </div>
+                    <div class="card-content">
+                        <div class="section">
+                            <h3>最新情報と背景</h3>
+                            <div class="section-content">
+                                夏の甲子園決勝は、明日8月23日（土）午前9時55分（予定）から、沖縄尚学と日大三高の間で行われます。沖縄尚学は準決勝で山梨学院を破り、日大三高も激戦を制して決勝へと駒を進めました。沖縄県では決勝進出に歓喜し、JTAやJALが臨時便を増発するほどの盛り上がりを見せており、県を挙げての応援体制が築かれています。この一戦は、単なる高校野球の試合に留まらず、地域の誇りをかけた大一番として注目されています。
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>情報源のヒント</h3>
+                            <div class="section-content">
+                                決勝戦の最新情報や試合速報は、高校野球の公式ウェブサイト、NHKの高校野球特設サイト、主要スポーツニュースサイトで確認できます。また、沖縄尚学の応援に関する詳細はJTAや那覇空港の公式ホームページ、地元のニュースメディアで確認可能です。決勝戦の中継は、テレビ朝日系列やNHK総合で放送される予定であり、NHKプラスなどで見逃し配信も期待されます。SNSでは「#甲子園決勝」でリアルタイムの反応を追うことができます。
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>多様な意見の紹介</h3>
+                            <div class="section-content">
+                                <p>X上では、甲子園決勝に対する多岐にわたる意見が見られます。</p>
+                                <ul style="margin-top: 12px; list-style: none;">
+                                    <li style="margin-bottom: 8px;">・「沖縄尚学、日大三高、決勝進出おめでとう！」「明日の決勝戦が待ち遠しい」</li>
+                                    <li style="margin-bottom: 8px;">・「沖縄、本気で機能停止しそう」「JTA増便すごい、県民の熱狂が伝わる」</li>
+                                    <li style="margin-bottom: 8px;">・「松坂大輔のノーヒットノーランを思い出す」「嘉義農林高校の甲子園決勝進出と重なる」</li>
+                                    <li style="margin-bottom: 8px;">・「どうにかチケット取れた！」「ビール飲みながら応援だよね」</li>
+                                    <li style="margin-bottom: 8px;">・「中学生の大会も東京対沖縄、偶然の一致が面白い」</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- スクリプトカード -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header gradient-orange">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                        </svg>
+                        ワイドショー特集コーナー：討論テーマ案
+                    </div>
+                    <div class="card-content">
+                        <div style="background: #4b5563; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                            <strong style="color: #fbbf24;">コーナータイトル：</strong><br>
+                            速報！夏の甲子園決勝！沖縄尚学vs日大三高、歴史的対決の舞台裏と熱狂
+                        </div>
+
+                        <div class="section">
+                            <h3>討論テーマ例</h3>
+                            <ul class="theme-list">
+                                <li class="theme-item">沖縄県民が熱狂！決勝進出で航空便増発、沖縄尚学が巻き起こす社会現象を徹底分析！</li>
+                                <li class="theme-item">東京vs沖縄！高校野球と中学生の全国大会で『東京vs沖縄』対決が偶然一致。その背景と意味とは？</li>
+                                <li class="theme-item">2024夏の甲子園決勝、沖縄尚学と日大三高、それぞれの勝負の鍵はどこに？OBや専門家が徹底予想！</li>
+                                <li class="theme-item">甲子園決勝戦、観戦チケット争奪戦！現地観戦の魅力とテレビ観戦で楽しむポイントは？</li>
+                                <li class="theme-item">甲子園が地域にもたらす経済効果！沖縄の観光や経済への影響を考える。</li>
+                            </ul>
+                        </div>
+
+                        <div class="section">
+                            <h3>コーナー構成案</h3>
+                            <ol class="structure-list">
+                                <li class="structure-item">オープニング：トレンドワード「甲子園決勝」の紹介、決勝戦の対戦カードと開催日時を告知</li>
+                                <li class="structure-item">準決勝ハイライト：沖縄尚学と日大三高、それぞれの準決勝の激闘をVTRで振り返る</li>
+                                <li class="structure-item">沖縄の熱狂ぶり特集：臨時便増便、県民の声、那覇空港の様子などを映像と現地リポートで紹介</li>
+                                <li class="structure-item">専門家解説：元高校球児や野球解説者を招き、決勝戦の見どころ、両校の強み、勝敗を分けるポイントを解説</li>
+                                <li class="structure-item">SNSの反応紹介：Xでのポジティブな応援メッセージ、興奮の声、歴史的背景への言及などを紹介</li>
+                                <li class="structure-item">まとめ：明日の決勝戦への期待を語り、視聴者への応援呼びかけ</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右カラム：ツイート -->
+            <div style="height: 100%;">
+                <div class="card tweet-card">
+                    <div class="card-header gradient-blue tweet-header-section">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84"/>
+                        </svg>
+                        リアルタイムツイート
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 0.85rem;">30件</span>
+                    </div>
+                    <div class="tweet-search-section">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg fill="currentColor" viewBox="0 0 20 20" style="width: 16px; height: 16px; color: #60a5fa;">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                            </svg>
+                            <span style="color: #60a5fa; font-size: 0.9rem;">甲子園決勝 関連ツイート</span>
+                        </div>
+                    </div>
+                    <div class="tweets-container">
+                        <div class="tweet-item">
+                            <div class="tweet-content">【偶然一致】甲子園決勝は「日大三VS沖縄尚学」、中学生の全国大会も「東京VS沖縄」に news.livedoor.com/article/detail... 23日の甲子園は東京と沖縄による頂上決戦。実は全国中学校体育大会の軟式野球でも、東京の駿台学園と沖縄の宜野座が決勝に進み、東京VS沖縄の頂上決戦が実現する。</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#2</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">【#沖縄尚学 甲子園決勝進出に伴い、#JTA が那覇=関西線を増便✈️⚾】 📅8/23(土)・8/24(日)の2日間で運航が追加されます! これに伴い、那覇空港では23日(土)に一部入口を朝5時より開放する時間外部分開館を実施します ご利用予定の方は那覇空港HPをご確認ください👇 naha-airport.co.jp/news/19007/</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#5</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">夏の甲子園決勝 チバリヨ~ 沖縄尚学VS日大三(西東京) 応援(しながら)ゆる~くおしゃべり会。 とき8/23(土) 午前10:00~12:00 場所、山川ひとし事務所 #れいわ新選組 #沖縄県 #豊見城市 #山川仁 #沖縄4区</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#8</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">【質問】 歴代の夏の甲子園決勝の中で「好きな試合TOP3」を教えて欲しいです。</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#10</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">【あの日のラテ欄】平成10年8月22日(土) 第80回〈夏の甲子園〉決勝、横浜の松坂大輔は京都成章を相手に11奪三振、ノーヒット・ノーランに抑えて3対0で勝利し、横浜に優勝をもたらせた。決勝での無安打無得点試合達成は昭和14年、第25回大会の海草中・嶋清一以来59年ぶり2人目の快挙だった。</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#11</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">8/22付 #スポーツ報知 #巨人 #リチャード 選手 「マー君さん」 #田中将大 投手援護弾! 母校沖縄尚学の甲子園決勝へも 励ましの一打に⚾️ #Giants #ジャイアンツ</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#13</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">JTA、沖縄/那覇〜大阪/関西線で臨時便3便 沖縄尚学の甲子園決勝進出で ift.tt/WnPkwCa</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#17</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">JAL 8/22那覇⇒大阪各空港 沖縄尚学 甲子園決勝進出による県民沸騰により予約受付システムがもう止められてるww</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#20</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">今年の夏の甲子園決勝戦 2010年甲子園で春夏連覇した興南高校ナイン誰か来ないのかなぁ 沖縄代表の良いところは、どこが出ようと沖縄県民が一致団結して応援するところ📣 #興南高校 #春夏連覇 #沖縄尚学</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#22</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">【決勝戦】 📣 熱戦の夏、いよいよフィナーレ!日大三 VS 沖縄尚学、激闘を戦い抜いてきた両校。 最後にふさわしい、素晴らしい決勝戦となることを祈ります。 熱闘甲子園では、市船井上君の魂のバックホームがアップされています。 何度見ても"シビレ"ます! #甲子園決勝</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#23</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">おはようございます!ヒロトんです😊🌸 2025年 8月21日(木)です 週の後半、あとちょっと頑張ろー!💪 沖縄尚学、甲子園決勝進出おめでとう!🎉 あの暑さの中でのプレー、本当にすごい...! 感動をありがとう😭</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#24</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">明日の沖縄 本格的に機能停止の可能性あり 甲子園決勝戦はビール飲みながら応援だよね!</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#25</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content"><注意喚起> 沖縄県では明日8/23の10:00から約3時間は電気、水道、ガス以外の全ての社会活動がかなり低下する可能性がございます。特に観光客の皆様はご注意下さい(笑)</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#26</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">1931年、日本統治下の台湾代表として甲子園に出場した嘉義農林高校(略称、嘉農)が、決勝進出を果たした。この初の快挙は、台湾全土を熱狂させ、植民地下の青春を象徴する物語となった。沖縄尚学もまた県民の期待を背負い、遠い島から甲子園決勝へ。当時の台湾人の胸の高鳴りが、今なら少し分かる。</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#27</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">シタイヒャーーーーーー!!!!! 沖縄尚学、やってくれました!!! 決勝進出です!!!!!!!!!! 【速報】沖縄尚学が夏の甲子園で決勝進出 山梨学院に5-4</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#28</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">📣無料ライブ配信決定!! // 侍ジャパン U-18壮行試合 #高校日本代表 対 #沖縄県高校選抜 9月2日(火) 夕方5時55分〜 \\\\ #侍ジャパン U-18壮行試合 QABでライブ配信決定! 【8/23(土)午前9:55→ #甲子園決勝 #沖縄尚学 戦実況生中継!】</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#29</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">全然繋がらなくてもうダメかと思ったけど 甲子園決勝のチケットどうにかとれたー! うちなーんちゅ2人で沖尚応援しにいくよ...! 運が悪いなと思うことが多発するんだけど チケ運だけは絶好調みたい🤣笑</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#30</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(event, tabName, tabType) {
+            // すべてのタブコンテンツを非表示
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // すべてのタブボタンの選択状態を解除
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+                button.classList.remove('positive');
+                button.classList.remove('negative');
+            });
+
+            // 選択されたタブを表示
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // タブタイプに応じてクラスを追加
+            if (tabType === 'positive') {
+                event.target.classList.add('positive');
+            } else if (tabType === 'negative') {
+                event.target.classList.add('negative');
+            }
+        }
+    </script>
+</body>
+</html>
+```
