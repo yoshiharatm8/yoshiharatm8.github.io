@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リアルタイム分析ダッシュボード - テレ朝</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(to bottom, #1a1a2e, #0f0f1e);
+            color: #e4e4e7;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .keyword-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(59, 130, 246, 0.2);
+            padding: 8px 24px;
+            border-radius: 20px;
+            color: #93c5fd;
+            font-weight: 500;
+            width: fit-content;
+            min-width: 300px;
+            white-space: nowrap;
+        }
+
+        .keyword-badge svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+            align-items: start;
+            min-height: calc(100vh - 150px);
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: #1f2937;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            padding: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .card-content {
+            padding: 16px;
+        }
+
+        .gradient-blue {
+            background: linear-gradient(to right, #2563eb, #7c3aed);
+            color: white;
+        }
+
+        .gradient-green {
+            background: linear-gradient(to right, #10b981, #14b8a6);
+            color: white;
+        }
+
+        .gradient-orange {
+            background: linear-gradient(to right, #f59e0b, #ea580c);
+            color: white;
+        }
+
+        .gradient-indigo {
+            background: linear-gradient(to right, #4f46e5, #06b6d4);
+            color: white;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            color: #60a5fa;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-content {
+            background: #374151;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .highlight-box {
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            background: #374151;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 16px;
+        }
+
+        .sentiment-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .sentiment-item {
+            flex: 1;
+        }
+
+        .sentiment-label {
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #4b5563;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-green { background: #10b981; }
+        .progress-gray { background: #9ca3af; }
+        .progress-red { background: #ef4444; }
+
+        .tabs {
+            margin-top: 16px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 4px;
+            background: #374151;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .tab-button.active.positive {
+            background: #065f46;
+            color: #10b981;
+        }
+
+        .tab-button.active.negative {
+            background: #7f1d1d;
+            color: #ef4444;
+        }
+
+        .tab-content-box {
+            background: #374151;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            border-left: 4px solid transparent;
+        }
+
+        .tab-content-box.positive {
+            border-left-color: #10b981;
+        }
+
+        .tab-content-box.neutral {
+            border-left-color: #9ca3af;
+        }
+
+        .tab-content-box.negative {
+            border-left-color: #ef4444;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .keyword-tag {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .theme-list {
+            list-style: none;
+            space-y: 8px;
+        }
+
+        .theme-item {
+            border-left: 2px solid #f59e0b;
+            padding: 8px 12px;
+            background: #374151;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 8px;
+        }
+
+        .structure-list {
+            counter-reset: item;
+            list-style: none;
+        }
+
+        .structure-item {
+            counter-increment: item;
+            padding: 8px 12px;
+            background: #374151;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 32px;
+        }
+
+        .structure-item::before {
+            content: counter(item);
+            position: absolute;
+            left: 12px;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+
+        .tweets-container {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .tweet-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .tweet-card-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .tweet-header-section {
+            flex-shrink: 0;
+        }
+
+        .tweet-search-section {
+            flex-shrink: 0;
+            padding: 12px 16px;
+            background: #374151;
+            border-bottom: 1px solid #4b5563;
+        }
+
+        .tweet-item {
+            padding: 12px;
+            border-bottom: 1px solid #374151;
+            transition: background 0.2s;
+        }
+
+        .tweet-item:hover {
+            background: #374151;
+        }
+
+        .tweet-content {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .tweet-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        .tweet-badge {
+            background: #4b5563;
+            color: #93c5fd;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* スクロールバーのスタイリング */
+        .tweets-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tweets-container::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 4px;
+        }
+
+        .tweets-container::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        .tweets-container::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>リアルタイム分析ダッシュボード</h1>
+            <div class="keyword-badge">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/>
+                </svg>
+                分析キーワード：テレ朝
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- 左カラム：概要と分析 -->
+            <div>
+                <!-- サマリーカード -->
+                <div class="card">
+                    <div class="card-header gradient-blue">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                        </svg>
+                        トレンドワード「テレ朝」概要
+                    </div>
+                    <div class="card-content">
+                        <div class="section">
+                            <h3>反応分析</h3>
+                            <div class="sentiment-bar">
+                                <div class="sentiment-item">
+                                    <div class="sentiment-label">
+                                        <span style="color: #10b981;">●</span> ポジティブ
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-green" style="width: 53%;"></div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.8rem; margin-top: 2px;">53%</div>
+                                </div>
+                                <div class="sentiment-item">
+                                    <div class="sentiment-label">
+                                        <span style="color: #9ca3af;">●</span> ニュートラル
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-gray" style="width: 37%;"></div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.8rem; margin-top: 2px;">37%</div>
+                                </div>
+                                <div class="sentiment-item">
+                                    <div class="sentiment-label">
+                                        <span style="color: #ef4444;">●</span> ネガティブ
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-red" style="width: 10%;"></div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.8rem; margin-top: 2px;">10%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="highlight-box">
+                            <h3 style="color: #3b82f6; margin-bottom: 8px;">ハイライト</h3>
+                            <p style="font-size: 0.9rem;">WBC放送権問題と人気番組・アニメの最新情報がトレンドの中心</p>
+                        </div>
+
+                        <div class="section-content">
+                            <p>本日、X（旧Twitter）で「テレ朝」がトレンドとなっています。その理由は、多岐にわたる番組の最新情報や、WBC（ワールド・ベースボール・クラシック）の放送権に関する話題が活発に議論されているためと推測されます。特に、NetflixがWBCの放送権を獲得する見込みで、地上波での中継が不透明になっているという共同通信の報道が大きな注目を集めています。これにより、前回大会で中継を担当したテレビ朝日系とTBS系の地上波放送の行方が懸念されています。一方で、人気アニメ『クレヨンしんちゃん』の新主題歌にFRUITS ZIPPERが決定したことや、『ミュージックステーション』、『10万円でできるかな』、『musicるTV』、『EIGHT-JAM』など、多数の番組出演情報や放送告知がファンによって拡散されています。直近のトレンド状況としては、WBC関連のニュースが波紋を広げると同時に、各番組のタイムリーな情報発信が相まって、継続的にポスト数が投稿されています。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分析カード -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header gradient-indigo">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                        </svg>
+                        話題となっている投稿の分析
+                    </div>
+                    <div class="card-content">
+                        <div class="section">
+                            <h3>注目投稿の傾向</h3>
+                            <div class="section-content">
+                                特に注目を集めている投稿は、WBCの放送権がNetflixに渡る可能性を示唆する共同通信の報道（ツイート4）と、それに対する具体的な懸念を指摘する投稿（ツイート14）です。また、FRUITS ZIPPERの『クレヨンしんちゃん』新主題歌決定（ツイート10, 11, 25）や、Perfumeの『ミュージックステーション』出演楽曲決定（ツイート6）、同番組の観覧募集（ツイート24, 30）など、人気アーティストや番組に関する公式発表やファンによる拡散が活発です。これらの投稿は、番組名やアーティスト名、ハッシュタグが効果的に使われ、多くのリポストや「いいね」を獲得しています。
+                            </div>
+                        </div>
+
+                        <div class="tabs">
+                            <div class="tab-buttons">
+                                <button class="tab-button active positive" onclick="switchTab(event, 'positive', 'positive')">ポジティブ</button>
+                                <button class="tab-button" onclick="switchTab(event, 'neutral', 'neutral')">ニュートラル</button>
+                                <button class="tab-button negative" onclick="switchTab(event, 'negative', 'negative')">ネガティブ</button>
+                            </div>
+                            <div id="positive" class="tab-content active">
+                                <div class="tab-content-box positive">
+                                    FRUITS ZIPPERが『クレヨンしんちゃん』の新主題歌を担当することへの祝福と期待、Perfumeや水瀬いのり、藤井風、片寄涼太などの人気アーティストがテレビ朝日系の番組に出演することへの喜び、ミュージックステーションの観覧募集に対する興奮などが多く見られます。「楽しみ」「絶対見る」「おめでとう」といった感情表現が目立ち、各番組やアーティストのファンを中心に盛り上がりを見せています。提供されたデータでは53%がポジティブな意見です。
+                                </div>
+                            </div>
+                            <div id="neutral" class="tab-content">
+                                <div class="tab-content-box neutral">
+                                    番組の放送日時や出演者情報を伝える告知ツイートや、公式アカウントのリポスト、特定の出来事（例：ウーマンラッシュアワー村本大輔さんの救急搬送）に関する報道を共有するものが多く見られます。また、過去のミュージックステーション出演を振り返る投稿や、野球中継に関する客観的なデメリットを列挙する意見なども含まれます。提供されたデータでは37%がニュートラルな意見です。
+                                </div>
+                            </div>
+                            <div id="negative" class="tab-content">
+                                <div class="tab-content-box negative">
+                                    WBCの放送権がNetflixに流れ、地上波での中継が不透明になることに対する懸念や不満が主要なネガティブ意見です。「地上波の野球班が使ってる選手の素材が使えない」「地上波が盛り上げ企画とか最低限しかやらない」「野球中継に慣れてない制作チームによる放映（実況含め）」といった具体的なデメリットを指摘する声や、テレビ局の経営体質（不動産収入で会社が回るため市場原理が働きにくい）に対する批判的な見方も散見されます。提供されたデータでは10%がネガティブな意見です。
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section" style="margin-top: 20px;">
+                            <h3>関連キーワード</h3>
+                            <div class="keyword-tags">
+                                <span class="keyword-tag">テレビ朝日</span>
+                                <span class="keyword-tag">テレ朝</span>
+                                <span class="keyword-tag">WBC</span>
+                                <span class="keyword-tag">ミュージックステーション</span>
+                                <span class="keyword-tag">Mステ</span>
+                                <span class="keyword-tag">クレヨンしんちゃん</span>
+                                <span class="keyword-tag">FRUITS ZIPPER</span>
+                                <span class="keyword-tag">10万円でできるかな</span>
+                                <span class="keyword-tag">musicるTV</span>
+                                <span class="keyword-tag">EIGHT-JAM</span>
+                                <span class="keyword-tag">Netflix</span>
+                                <span class="keyword-tag">TBS</span>
+                                <span class="keyword-tag">片寄涼太</span>
+                                <span class="keyword-tag">水瀬いのり</span>
+                                <span class="keyword-tag">藤井風</span>
+                                <span class="keyword-tag">Perfume</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中央カラム：情報とスクリプト -->
+            <div>
+                <!-- 情報カード -->
+                <div class="card">
+                    <div class="card-header gradient-green">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        視聴者への情報提供
+                    </div>
+                    <div class="card-content">
+                        <div class="section">
+                            <h3>最新情報と背景</h3>
+                            <div class="section-content">
+                                本日「テレ朝」がトレンドになっている背景には、主に二つの大きな話題があります。一つは、共同通信の報道によるWBC放送権に関する動向です。Netflixがその権利を獲得する見込みと報じられ、過去にWBCを中継してきたテレビ朝日系の地上波での放送が不透明になり、視聴者の間で波紋が広がっています。このニュースは、テレビ局の経営戦略やスポーツ中継の未来にも影響を与える可能性があります。もう一つは、テレビ朝日系の多数の人気番組に関する最新情報です。具体的には、アイドルグループFRUITS ZIPPERが国民的アニメ『クレヨンしんちゃん』の新主題歌を担当することになったビッグニュースや、『ミュージックステーション』、『10万円でできるかな』、『EIGHT-JAM』、『キョコロヒー』などの人気番組におけるゲスト出演情報や放送告知が活発に行われており、視聴者の期待感が高まっています。これらの話題が複合的に作用し、「テレ朝」がXのトレンドを賑わせています。
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>情報源のヒント</h3>
+                            <div class="section-content">
+                                トレンドに関する詳細情報や最新情報は、以下の公式情報源で確認できます。<br>
+                                <ul style="margin-top: 12px; list-style-position: inside; padding-left: 8px;">
+                                    <li><b>テレビ朝日公式サイト</b>: 各番組の公式ページやニュースリリースで詳細な情報が公開されています。</li>
+                                    <li><b>各番組・アーティストの公式Xアカウント</b>: @Mst_com、@musicru_tv、@eightjam、@crayon_officialなど、多くの番組やアーティストが最新情報を投稿しています。</li>
+                                    <li><b>TVer</b>: 放送終了後の見逃し配信で、テレビ朝日系の人気番組を視聴できます。</li>
+                                    <li><b>ニュースサイト</b>: WBC放送権に関する報道は、共同通信やYahoo!ニュースなどで追跡できます。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>多様な意見の紹介</h3>
+                            <div class="section-content">
+                                <p>X上では、テレビ朝日に関する様々な意見が交わされています。</p>
+                                <ul style="margin-top: 12px; list-style: none;">
+                                    <li style="margin-bottom: 8px;">・<b>WBC放送権に関して</b>：「地上波で野球が見られなくなるのは残念」「ネトフリ独占は高騰した放送権料を回収するためか」といった、期待と懸念が入り混じった声が上がっています。</li>
+                                    <li style="margin-bottom: 8px;">・<b>番組やコンテンツに関して</b>：「FRUITS ZIPPERのクレヨンしんちゃん主題歌決定、本当に嬉しい！」「Mステの観覧募集、絶対応募する！」など、各番組や出演者への熱烈な期待や応援の声が多数見られます。</li>
+                                    <li style="margin-bottom: 8px;">・<b>テレビ局の経営に関して</b>：「テレ朝とTBSは不動産収入も大きく、報道の市場原理が働きにくい」といった、テレビ局の構造に言及する意見も一部で議論されています。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- スクリプトカード -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header gradient-orange">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                        </svg>
+                        ワイドショー特集コーナー：討論テーマ案
+                    </div>
+                    <div class="card-content">
+                        <div style="background: #4b5563; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                            <strong style="color: #fbbf24;">コーナータイトル：</strong><br>
+                            緊急速報！「テレ朝」トレンドの深層！WBC放送権の行方と人気番組の秘密
+                        </div>
+
+                        <div class="section">
+                            <h3>討論テーマ例</h3>
+                            <ul class="theme-list">
+                                <li class="theme-item">WBC放送権の行方！地上波野球中継は終わるのか？視聴者とテレビ局の未来を徹底討論！</li>
+                                <li class="theme-item">「クレヨンしんちゃん」新主題歌発表！FRUITS ZIPPER起用の裏側と、テレビ朝日系アニメ戦略を深掘り！</li>
+                                <li class="theme-item">人気番組に豪華ゲスト続々！テレビ朝日はなぜ今、アーティスト・アイドルを積極的に起用するのか？</li>
+                                <li class="theme-item">「不動産収入で回る」と指摘されるテレビ局経営の実態。報道の自由度と市場原理の関係とは？</li>
+                            </ul>
+                        </div>
+
+                        <div class="section">
+                            <h3>コーナー構成案</h3>
+                            <ol class="structure-list">
+                                <li class="structure-item">オープニング：今日のトレンドワード「テレ朝」を紹介。WBC報道と番組情報の二大トピックを提示。</li>
+                                <li class="structure-item">速報！WBC放送権問題：Netflix獲得報道のVTR。地上波中継不透明化の背景を解説。</li>
+                                <li class="structure-item">専門家解説：スポーツジャーナリストを招き、WBC放送権高騰の理由と、ネット配信への移行が与える影響について解説。</li>
+                                <li class="structure-item">「テレ朝」人気コンテンツの魅力：『クレヨンしんちゃん』新主題歌アーティストFRUITS ZIPPERの紹介VTRとコメント。Mステなど話題の番組出演者情報を紹介。</li>
+                                <li class="structure-item">スタジオ討論：テレビ局の経営戦略とコンテンツ制作の未来。地上波の役割とネット配信の可能性。</li>
+                                <li class="structure-item">視聴者への情報提供：今後注目すべきテレビ朝日系番組のラインナップと、TVerなどでの視聴方法を告知。</li>
+                                <li class="structure-item">まとめ：今日の「テレ朝」トレンドを通じて見えてくる、テレビ業界の今と未来。</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右カラム：ツイート -->
+            <div style="height: 100%;">
+                <div class="card tweet-card">
+                    <div class="card-header gradient-blue tweet-header-section">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84"/>
+                        </svg>
+                        リアルタイムツイート
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 0.85rem;">30件</span>
+                    </div>
+                    <div class="tweet-search-section">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg fill="currentColor" viewBox="0 0 20 20" style="width: 16px; height: 16px; color: #60a5fa;">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                            </svg>
+                            <span style="color: #60a5fa; font-size: 0.9rem;">テレ朝 関連ツイート</span>
+                        </div>
+                    </div>
+                    <div class="tweets-container">
+                        <div class="tweet-item">
+                            <div class="tweet-content">【共同通信報道】Netflix、WBC放送権獲得へ テレビの地上波中継は不透明 news.livedoor.com/article/detail... 日本が優勝した前回大会の盛り上がりを受けて放送権料が高騰しているとみられる。前回は、テレビ朝日系とTBS系の地上波で中継したほか、Amazonプライムビデオがネット配信した。</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#4</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">8/29(金)21:00〜 テレビ朝日系「ミュージックステーション」 にて披露する楽曲が決定!!︎🎆 『巡ループ』 『レーザービーム』 の2曲を披露します🙌🏻 ぜひご覧ください💫 tv-asahi.co.jp/music/ @Mst_com #Mステ #ネビュラロマンス後篇 #prfm</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#6</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">なんとーっ! 10月からFRUITS ZIPPERが、テレビ朝日系 「クレヨンしんちゃん」の新主題歌を担当することに決定しました! 土曜16:30はテレビの前でみんなではちゃめちゃに楽しんじゃいましょう〜🫶 やっとみんなにお知らせすることができて嬉しいです🥹 #ふるっぱー</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#10</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">ネトフリが独占放送することでのデメリット ◾️地上波の野球班が使ってる選手の素材が使えない(特にNPB周り) ◾️地上波が盛り上げ企画とか最低限しかやらない(テレ朝さんとTBSさんがめちゃやってた。これ結構でかい) ◾️野球中継に慣れてない制作チームによる放映(実況含め)</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#14</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">TBSHDやテレ朝HD、株価反発 「WBC放送なし」で費用懸念が後退 nikkei.com/article/DGXZQO...</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#16</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">テレビ朝日系全国放送「#musicるTV」に #水瀬いのり が出演しました🌼 music-ru.com ご視聴いただいた皆様、 ありがとうございました🌈✨ 次週も出演しますのでお楽しみに👀 ➡9/1(月)25:26~25:56(関東地区) @musicru_tv</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#3</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">8月31日(日)23:15~ テレビ朝日系「EIGHT-JAM」 藤井 風特集 にスタジオ出演決定! Yaffleさん、STUTSさん、清塚信也さんと ご一緒します。 tv-asahi.co.jp/eightjam/</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#7</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">\\ 📣BIG NEWS!💫/ 🍑·.⟡┈┈┈┈┈︎ ✧┈┈┈┈┈⟡.·ᝰꪑ🖍 FRUITS ZIPPERが... TVアニメ《クレヨンしんちゃん》 の新主題歌を担当することに決定!!️ ᝰꪑ🖍·.⟡┈┈┈┈┈︎ ✧┈┈┈┈┈⟡.·🍑 FRUITS ZIPPERの新曲『はちゃめちゃわちゃライフ!』が ꒰ クレヨンしんちゃん ꒱</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#11</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">#10万円でできるかな 今夜7時から!3時間SP✨ ハウマッチマン!!️ 外国人が好きな 日本の飲食チェーンランキング🍜 宮田さんからあるお知らせが... ぜひ放送でチェックお願いします! #KisMyFt2 #宮田俊哉</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#19</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">【#片寄涼太 出演情報】 📺2025.8.25(月)23:15- O.A. テレビ朝日『激レアさんを連れてきた。』 🔗 tv-asahi.co.jp/geki_rare/ #激レアさん @geki_rare #片寄涼太 @yose__staff #Bouquet #GENERATIONS</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#15</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">🫧🍑#Mステ 観覧募集🍑🫧 8/29(金)21:00~21:54 テレビ朝日系『ミュージックステーション』 PiKiとして出演🌸 FRUITS ZIPPER 松本かれん🩷 CUTIE STREET桜庭遥花 🩷 ▼当日生放送の観覧を募集します❕</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#24</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">テレ朝とTBSは不動産業収入で会社が回るので、実はあんまり報道の内容では市場原理が働かない局なんですよね......。</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#20</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">\\お知らせ📢/ 本日23:45〜 テレビ朝日「キョコロヒー」 が放送されます📺 齊藤に男性芸人の友達を作ろう企画の 第2段✌️ 今回はレインボーさんが来てくださいました! ぜひご覧ください🌈</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#5</span>
+                            </div>
+                        </div>
+                        <div class="tweet-item">
+                            <div class="tweet-content">FRUITS ZIPPERが10月より TVアニメ『クレヨンしんちゃん』主題歌を担当! 新曲「はちゃめちゃわちゃライフ!」 放送をお楽しみに✨ テレビ朝日系 毎週土曜 午後4:30〜5:00放送</div>
+                            <div class="tweet-meta">
+                                <span class="tweet-badge">ツイート</span>
+                                <span>#25</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(event, tabName, tabType) {
+            // すべてのタブコンテンツを非表示
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // すべてのタブボタンの選択状態を解除
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+                button.classList.remove('positive');
+                button.classList.remove('negative');
+            });
+
+            // 選択されたタブを表示
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // タブタイプに応じてクラスを追加
+            if (tabType === 'positive') {
+                event.target.classList.add('positive');
+            } else if (tabType === 'negative') {
+                event.target.classList.add('negative');
+            }
+        }
+    </script>
+</body>
+</html>
